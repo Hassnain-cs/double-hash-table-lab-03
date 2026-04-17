@@ -1,74 +1,48 @@
 #include "hash.h"
 #include <stdio.h>
 
-/*
- * First hash function
- * This decides the "starting index" for a key
- */
+// First hash function, just modulo to get starting position
 int h1(int key, int M) {
-    return key % M;  // simple modulo hashing
+    return key % M;
 }
 
-/*
- * Second hash function
- * This decides how far we jump when a collision happens
- */
+// Second hash function, determines step size when there's a collision
 int h2(int key, int R) {
-    int step = R - (key % R);
-
-    // Just in case step becomes 0, we fix it to 1
-    // because step = 0 would break probing completely
-    if (step == 0) {
-        step = 1;
-    }
-
-    return step;
+    return R - (key % R);
 }
 
-/*
- * Main function that fills the hash table
- */
+// Main function that fills the hash table
 void hashInit(int* hashTable, int* input, int M, int R) {
 
-    // Step 1: Mark all positions as empty
-    // We use -1 to represent empty slots
+    // Start with empty slots (using -1 to mean empty)
     for (int i = 0; i < M; i++) {
         hashTable[i] = -1;
     }
 
-    // Step 2: Insert each element one by one
-    for (int j = 0; j < M; j++) {
+    // Go through each number we need to insert
+    // We have 21 numbers total (that's why j < 21)
 
-        int key = input[j];   // current value we want to insert
-        int i = 0;            // probe counter
-        int placed = 0;       // flag to check if inserted
+    for (int j = 0; j < 21; j++) {
+        int key = input[j];     // the number we want to insert
+        int i = 0;              // how many steps we've tried
+        int placed = 0;         // whether we found a spot yet
 
-        // Calculate step size only once (more efficient)
-        int step = h2(key, R);
+        int step = h2(key, R);  // how far to jump when there's a collision
 
-        /*
-         * IMPORTANT FIX:
-         * If step and M share factors, we might not visit all slots.
-         * So in that case, we fall back to step = 1 (linear probing).
-         */
-        int adjustedStep = (M % step == 0 && step > 1) ? 1 : step;
-
-        // Keep probing until we find an empty slot
+        // Keep looking for an empty spot until we find one or run out of tries
         while (!placed && i < M) {
+            // Double hashing formula: start position + (step * attempt) mod table size
+            int index = (h1(key, M) + step * i) % M;
 
-            int index = (h1(key, M) + adjustedStep * i) % M;
-
-            // If slot is empty, place the key
+            // If this spot is empty, put the number here
             if (hashTable[index] == -1) {
                 hashTable[index] = key;
-                placed = 1;
+                placed = 1;     // we're done with this number
             }
-
-            // Otherwise, try next probe
-            i++;
+            i++;  // try the next spot if this one was taken
         }
 
-        // If we couldn't place the key (very unlikely here)
+        // If we tried all spots and couldn't place it (shouldn't happen with M=23)
         if (!placed) {
             printf("Could not place %d\n", key);
         }
